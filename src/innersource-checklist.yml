@@ -2,7 +2,8 @@
 # Checklist
 
 # Licence type required ?
-license: MIT
+license: 
+  - MIT
 
 # CODE_OF_CONDUCT file required ?
 code_of_conduct: true
