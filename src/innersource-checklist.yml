@@ -1,0 +1,47 @@
+---
+# Checklist
+
+# Licence type required ?
+license: MIT
+
+# CODE_OF_CONDUCT file required ?
+code_of_conduct: true
+
+# CODEOWNERS file required ?
+codeowners: true
+
+# CONTRIBUTING file required ?
+contributing: true
+
+# Branch protection rules
+branch_protection:
+  allowsDeletions: true
+  allowsForcePushes: true
+  bypassForcePushActorIds:
+    users: 
+    - jefeish
+    teams:
+    - foo
+  bypassPullRequestActorIds: 
+    users:
+    - jefeish
+    teams:
+    - foo
+  isAdminEnforced: true
+  pushActorIds: 
+    users: 
+    - jefeish
+    teams:
+    - foo
+  requiredApprovingReviewCount: 2
+  requiredStatusCheckContexts: []
+  requiresApprovingReviews: true
+  requiresCodeOwnerReviews: true
+  requiresCommitSignatures: true
+  requiresConversationResolution: true
+  requiresLinearHistory: true
+  requiresStatusChecks: true
+  requiresStrictStatusChecks: true
+  restrictsPushes: true
+  restrictsReviewDismissals: true
+  reviewDismissalActorIds: []

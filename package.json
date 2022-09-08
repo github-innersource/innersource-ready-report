@@ -12,11 +12,22 @@
     "probot-app"
   ],
   "scripts": {
-    "start": "probot run ./index.js",
-    "test": "jest"
+    "dev": "nodemon --exec \"npm start\"",
+    "debug": "node --nolazy ./src/index.js",
+    "start": "probot run ./src/index.js",
+    "test": "jest",
+    "quality": "npm run jslint",
+    "test:watch": "npm run test -- --watchAll"
   },
   "dependencies": {
-    "probot": "^12.2.4"
+    "bootstrap": "^3.4.1",
+    "express": "^4.18.1",
+    "fs": "^0.0.1-security",
+    "handlebars": "^4.7.7",
+    "jquery": "^3.6.1",
+    "js-yaml": "^4.1.0",
+    "probot": "^12.2.4",
+    "serve-favicon": "^2.5.0"
   },
   "devDependencies": {
     "jest": "^28.0.0",
