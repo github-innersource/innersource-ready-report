@@ -49,23 +49,21 @@ class policyUI {
         })
 
         // Add a new route
-        this.router.get("/newRoute", (req, res) => {
-            fs.readFile(__dirname + '/templates/newRoute.hbs', 'utf8', (err, tpl) => {
-                if (err) {
-                    console.error(err)
-                    return
-                }
+        // this.router.get("/newRoute", (req, res) => {
+        //     fs.readFile(__dirname + '/templates/newRoute.hbs', 'utf8', (err, tpl) => {
+        //         if (err) {
+        //             console.error(err)
+        //             return
+        //         }
 
-                var header = fs.readFileSync(__dirname + '/templates/header.html', 'utf8');
-                var template = hbs.compile(tpl)
-                var data = {
-                    "header": header
-                }
-                res.send(template(data))
-            })
-        })
-
- 
+        //         var header = fs.readFileSync(__dirname + '/templates/header.html', 'utf8');
+        //         var template = hbs.compile(tpl)
+        //         var data = {
+        //             "header": header
+        //         }
+        //         res.send(template(data))
+        //     })
+        // })
     }
 }
 
