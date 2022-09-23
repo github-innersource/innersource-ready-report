@@ -1,9 +1,7 @@
 ---
-# Checklist
-
 # Licence type required ?
 license: 
-  - MIT
+  MIT
 
 # CODE_OF_CONDUCT file required ?
 code_of_conduct: true
@@ -14,29 +12,16 @@ codeowners: true
 # CONTRIBUTING file required ?
 contributing: true
 
+# README file required ?
+readme: true
+
 # Branch protection rules
-branch_protection:
+branch_protection_rules: 
   allowsDeletions: true
   allowsForcePushes: true
-  bypassForcePushActorIds:
-    users: 
-    - jefeish
-    teams:
-    - foo
-  bypassPullRequestActorIds: 
-    users:
-    - jefeish
-    teams:
-    - foo
   isAdminEnforced: true
-  pushActorIds: 
-    users: 
-    - jefeish
-    teams:
-    - foo
-  requiredApprovingReviewCount: 2
-  requiredStatusCheckContexts: []
   requiresApprovingReviews: true
+  requiredApprovingReviewCount: 2
   requiresCodeOwnerReviews: true
   requiresCommitSignatures: true
   requiresConversationResolution: true
@@ -45,4 +30,3 @@ branch_protection:
   requiresStrictStatusChecks: true
   restrictsPushes: true
   restrictsReviewDismissals: true
-  reviewDismissalActorIds: []
