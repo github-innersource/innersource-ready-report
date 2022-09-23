@@ -18,7 +18,7 @@ readme: true
 # Branch protection rules
 branch_protection_rules: 
   allowsDeletions: true
-  allowsForcePushes: true
+  allowsForcePushes: false
   isAdminEnforced: true
   requiresApprovingReviews: true
   requiredApprovingReviewCount: 2
@@ -30,3 +30,6 @@ branch_protection_rules:
   requiresStrictStatusChecks: true
   restrictsPushes: true
   restrictsReviewDismissals: true
+
+# Check on open Dependabot Alerts
+dependabot_alert_check: true

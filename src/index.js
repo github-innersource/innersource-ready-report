@@ -80,7 +80,7 @@ async function checkForFile(app, context, fileName) {
  */
 async function branch_protection(app, context, branch_protection_rules) {
   app.log.info("Branch Protection:" + util.inspect(branch_protection_rules))
-  let response = "\n\n## Branch Protection Rules\n\n"
+  let response = "\n\n## Branch Protection Rules (default branch)\n\n"
   response += "|STATUS|RULE|EXPECTED|FOUND|\n|---|---|---|---|\n"
 
   Object.keys(branch_protection_rules).forEach(async (ruleName) => {
@@ -88,6 +88,16 @@ async function branch_protection(app, context, branch_protection_rules) {
     app.log.info("rule:" + branch_protection_rules[ruleName])
   })
 
+  return response
+}
+
+/**
+ * 
+ * @param {*} app 
+ */
+async function dependabot_alert_check(app, context) {
+  app.log.info("Dependabot Alert Check")
+  let response = "\n\n## Dependabot Alerts\n\n"
   return response
 }
 
@@ -102,7 +112,7 @@ module.exports = (app, { getRouter }) => {
   app.on("repository.edited", async (context) => {
 
     innersourceRequirements = loadAppConfig(app)
-    report = "# Innersource Onboarding Report\n\n## Required Files\n\n"
+    report = "# Innersource Ready Report\n\n## Required Files\n\n"
     app.log.info("repository.edited");
 
     if (context.payload.changes.topics) {
@@ -135,12 +145,16 @@ module.exports = (app, { getRouter }) => {
         report += await branch_protection(app, context, innersourceRequirements['branch_protection_rules'])
       }
 
+      if (innersourceRequirements['dependabot_alert_check'] === true) {
+        report += await dependabot_alert_check(app, context)
+      }
+
       app.log.info("report: " + report)
 
       const issue = await context.octokit.rest.issues.create({
         owner: context.payload.repository.owner.login,
         repo: context.payload.repository.name,
-        title: 'Innersource Onboarding Report',
+        title: 'Innersource Ready Report',
         body: report,
       });
     }
