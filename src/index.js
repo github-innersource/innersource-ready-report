@@ -36,14 +36,45 @@ async function checkContent(app, context, fileName) {
       }
     );
 
-    let buff = Buffer.from(file.data.content, 'base64');
-    let text = buff.toString('utf-8');
+    let buff = Buffer.from(file.data.content, 'base64')
+    let text = buff.toString('utf-8')
 
     response = text
   } catch (err) {
     response = err.status
   }
 
+  return response
+}
+
+/**
+ * 
+ * @param {*} app 
+ */
+async function checkLicense(app, context, license) {
+  app.log.info("checkLicense: " + license)
+  let response
+  let hasLicense = false
+  let repoLicense
+  try {
+    repoLicense = await context.octokit.licenses.getForRepo(
+      {
+        owner: context.payload.repository.owner.login,
+        repo: context.payload.repository.name,
+      }
+    )
+  } catch (err) {
+    response = err.status
+  }
+  currentLicense = repoLicense.data.license.spdx_id
+  app.log.info("currentLicense: " + currentLicense)
+  license.indexOf(currentLicense) > -1 ? hasLicense = true : hasLicense = false
+
+  if (hasLicense) {
+    response = "|:white_check_mark:| " + license + "| " + repoLicense.data.license.spdx_id + " |\n"
+  } else {
+    response = "|:warning:| " + license + "| " + repoLicense.data.license.spdx_id + " |\n"
+  }
   return response
 }
 
@@ -83,9 +114,44 @@ async function branch_protection(app, context, branch_protection_rules) {
   let response = "\n\n## Branch Protection Rules (default branch)\n\n"
   response += "|STATUS|RULE|EXPECTED|FOUND|\n|---|---|---|---|\n"
 
+  result = await context.octokit.graphql(
+    `query listBranchProtectionRule($owner: String!, $repo: String!) {
+      repository( owner: $owner, name: $repo ) {
+        branchProtectionRules(first:5) {
+          nodes {
+            allowsDeletions
+            allowsForcePushes
+            isAdminEnforced
+            requiresApprovingReviews
+            requiredApprovingReviewCount
+            requiresCodeOwnerReviews
+            requiresCommitSignatures
+            requiresConversationResolution
+            requiresLinearHistory
+            requiresStatusChecks
+            requiresStrictStatusChecks
+            restrictsPushes
+            restrictsReviewDismissals
+          }
+        }
+      }
+    }`,
+    {
+      owner: context.payload.repository.owner.login,
+      repo: context.payload.repository.name
+    }
+  )
+
+  app.log.info("Branch Protection:" + util.inspect(result.repository.branchProtectionRules.nodes[0]))
+
   Object.keys(branch_protection_rules).forEach(async (ruleName) => {
-    response += "|:white_check_mark:|" + ruleName + "|" + branch_protection_rules[ruleName] + "||\n"
-    app.log.info("rule:" + branch_protection_rules[ruleName])
+
+    if (branch_protection_rules[ruleName] == result.repository.branchProtectionRules.nodes[0][ruleName]) {
+      response += "|:white_check_mark:|" + ruleName + "|" + branch_protection_rules[ruleName] +"|"+ result.repository.branchProtectionRules.nodes[0][ruleName] +"|\n"
+    }
+    else {
+      response += "|:warning:|" + ruleName + "|" + branch_protection_rules[ruleName] + "|"+ result.repository.branchProtectionRules.nodes[0][ruleName] +"|\n"
+    }
   })
 
   return response
@@ -98,6 +164,14 @@ async function branch_protection(app, context, branch_protection_rules) {
 async function dependabot_alert_check(app, context) {
   app.log.info("Dependabot Alert Check")
   let response = "\n\n## Dependabot Alerts\n\n"
+  app.log.info("Dependabot Alert Check: " + util.inspect(context.github))
+
+  // await context.octokit.dependabot.getAlerts({
+  //   owner: context.payload.repository.owner.login,
+  //   repo: context.payload.repository.name,
+  // })
+
+
   return response
 }
 
@@ -112,7 +186,7 @@ module.exports = (app, { getRouter }) => {
   app.on("repository.edited", async (context) => {
 
     innersourceRequirements = loadAppConfig(app)
-    report = "# Innersource Ready Report\n\n## Required Files\n\n"
+    report = "# Innersource Ready Report\n\n"
     app.log.info("repository.edited");
 
     if (context.payload.changes.topics) {
@@ -120,10 +194,15 @@ module.exports = (app, { getRouter }) => {
       app.log.info("Topics changed");
       app.log.info("Topics: " + context.payload.repository.topics)
 
-      report += "\n\n|STATUS|FILE|LOCATION|\n|---|---|---|\n"
+      report += "## License\n\n"
+
+      report += "|STATUS|EXPECTED LICENSE|SET LICENSE|\n|---|---|---|\n"
       if (innersourceRequirements['license']) {
-        report += await checkForFile(app, context, "LICENSE")
+        report += await checkLicense(app, context, innersourceRequirements['license'])
       }
+
+      report += "## Required Files\n\n"
+      report += "|STATUS|FILE|LOCATION|\n|---|---|---|\n"
 
       if (innersourceRequirements['code_of_conduct'] === true) {
         report += await checkForFile(app, context, "CODE_OF_CONDUCT")
@@ -145,7 +224,7 @@ module.exports = (app, { getRouter }) => {
         report += await branch_protection(app, context, innersourceRequirements['branch_protection_rules'])
       }
 
-      if (innersourceRequirements['dependabot_alert_check'] === true) {
+      if (innersourceRequirements['dependabot_alert_check']) {
         report += await dependabot_alert_check(app, context)
       }
 

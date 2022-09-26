@@ -1,7 +1,8 @@
 ---
 # Licence type required ?
 license: 
-  MIT
+  - MIT
+  - ISC
 
 # CODE_OF_CONDUCT file required ?
 code_of_conduct: true
@@ -31,5 +32,6 @@ branch_protection_rules:
   restrictsPushes: true
   restrictsReviewDismissals: true
 
-# Check on open Dependabot Alerts
-dependabot_alert_check: true
+# Check on open Dependabot Alerts and verify the threshold
+# severity: low, moderate, high, critical
+dependabot_alert_check: high
