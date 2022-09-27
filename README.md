@@ -76,6 +76,8 @@ INFO (server): Listening on http://localhost:3000
     INFO (server): Listening on http://localhost:3000
     INFO (server): Connected
     ```
-    
+
     </details>
-- Done ! 
+- Done !
+
+![issue-report-sample.png](docs/images/issue-report-sample.png)
