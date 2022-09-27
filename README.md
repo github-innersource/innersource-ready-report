@@ -80,6 +80,9 @@ INFO (server): Listening on http://localhost:3000
     </details>
 - Done !
 
+## Process Flow
+
+![processflow](docs/images/processflow.png)
 ## Sample Issue Report
 
 ![issue-report-sample.png](docs/images/issue-report-sample.png)

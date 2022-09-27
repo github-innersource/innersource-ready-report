@@ -5,7 +5,6 @@ const yaml = require('js-yaml')
 const util = require('util')
 let innersourceRequirements = {}
 let report = ""
-
 /**
  * This function loads the app configuration from the file system
  * @param {*} app 
@@ -85,7 +84,6 @@ async function checkLicense(app, context, license) {
 async function checkForFile(app, context, fileName) {
   app.log.info("checkForFile: " + fileName)
   let response
-  let line
 
   response = await checkContent(app, context, fileName)
   if (response == "404") {
@@ -147,10 +145,10 @@ async function branch_protection(app, context, branch_protection_rules) {
   Object.keys(branch_protection_rules).forEach(async (ruleName) => {
 
     if (branch_protection_rules[ruleName] == result.repository.branchProtectionRules.nodes[0][ruleName]) {
-      response += "|:white_check_mark:|" + ruleName + "|" + branch_protection_rules[ruleName] +"|"+ result.repository.branchProtectionRules.nodes[0][ruleName] +"|\n"
+      response += "|:white_check_mark:|" + ruleName + "|" + branch_protection_rules[ruleName] + "|" + result.repository.branchProtectionRules.nodes[0][ruleName] + "|\n"
     }
     else {
-      response += "|:warning:|" + ruleName + "|" + branch_protection_rules[ruleName] + "|"+ result.repository.branchProtectionRules.nodes[0][ruleName] +"|\n"
+      response += "|:warning:|" + ruleName + "|" + branch_protection_rules[ruleName] + "|" + result.repository.branchProtectionRules.nodes[0][ruleName] + "|\n"
     }
   })
 
@@ -166,13 +164,52 @@ async function dependabot_alert_check(app, context) {
   let response = "\n\n## Dependabot Alerts\n\n"
   app.log.info("Dependabot Alert Check: " + util.inspect(context.github))
 
-  // await context.octokit.dependabot.getAlerts({
-  //   owner: context.payload.repository.owner.login,
-  //   repo: context.payload.repository.name,
-  // })
-
-
   return response
+}
+
+/**
+ * 
+ * @param {*} app 
+ * @param {*} context 
+ */
+async function runIssueReport(app, context, innersourceRequirements) {
+  app.log.info("runIssueReport")
+
+  report += "## License\n\n"
+
+  report += "|STATUS|EXPECTED LICENSE|SET LICENSE|\n|---|---|---|\n"
+  if (innersourceRequirements['license']) {
+    report += await checkLicense(app, context, innersourceRequirements['license'])
+  }
+
+  report += "## Required Files\n\n"
+  report += "|STATUS|FILE|LOCATION|\n|---|---|---|\n"
+
+  if (innersourceRequirements['code_of_conduct'] === true) {
+    report += await checkForFile(app, context, "CODE_OF_CONDUCT")
+  }
+
+  if (innersourceRequirements['codeowners'] === true) {
+    report += await checkForFile(app, context, "CODEOWNERS")
+  }
+
+  if (innersourceRequirements['contributing'] === true) {
+    report += await checkForFile(app, context, "CONTRIBUTING")
+  }
+
+  if (innersourceRequirements['readme'] === true) {
+    report += await checkForFile(app, context, "README.md")
+  }
+
+  if (innersourceRequirements['branch_protection_rules']) {
+    report += await branch_protection(app, context, innersourceRequirements['branch_protection_rules'])
+  }
+
+  if (innersourceRequirements['dependabot_alert_check']) {
+    report += await dependabot_alert_check(app, context)
+  }
+
+  return report
 }
 
 /**
@@ -183,50 +220,44 @@ module.exports = (app, { getRouter }) => {
   // Your code here
   app.log.info("Yay, the app was loaded!");
 
+  // --------------------------------------------------------------------------
+  app.on("issue_comment.created", async (context) => {
+    app.log.info("issue_comment.created")
+    const comment = context.payload.comment.body;
+    report = ""
+    app.log.info("issue_comment.created: " + util.inspect(context.payload))
+    if ((comment.startsWith("/check") > -1) && (context.payload.comment.user.type == "User")) {
+      app.log.info("check")
+      await runIssueReport(app, context, innersourceRequirements)
+      app.log.info("report: " + report)
+
+      const issue = await context.octokit.rest.issues.createComment({
+        owner: context.payload.repository.owner.login,
+        repo: context.payload.repository.name,
+        issue_number: context.payload.issue.number,
+        body: report,
+      });
+    }
+    else {
+      app.log.info("not check")
+    }
+  })
+
+  // --------------------------------------------------------------------------
   app.on("repository.edited", async (context) => {
 
     innersourceRequirements = loadAppConfig(app)
     report = "# Innersource Ready Report\n\n"
     app.log.info("repository.edited");
 
+    report += " An `Innersource Ready Report` has been generated for this repository. Please review the report and make any necessary changes. \n\nYou can re-run the report by creating an Issue-Comment with the content of `/check`\n\n\n"
+
     if (context.payload.changes.topics) {
       app.log.info("repository.edited");
       app.log.info("Topics changed");
       app.log.info("Topics: " + context.payload.repository.topics)
 
-      report += "## License\n\n"
-
-      report += "|STATUS|EXPECTED LICENSE|SET LICENSE|\n|---|---|---|\n"
-      if (innersourceRequirements['license']) {
-        report += await checkLicense(app, context, innersourceRequirements['license'])
-      }
-
-      report += "## Required Files\n\n"
-      report += "|STATUS|FILE|LOCATION|\n|---|---|---|\n"
-
-      if (innersourceRequirements['code_of_conduct'] === true) {
-        report += await checkForFile(app, context, "CODE_OF_CONDUCT")
-      }
-
-      if (innersourceRequirements['codeowners'] === true) {
-        report += await checkForFile(app, context, "CODEOWNERS")
-      }
-
-      if (innersourceRequirements['contributing'] === true) {
-        report += await checkForFile(app, context, "CONTRIBUTING")
-      }
-
-      if (innersourceRequirements['readme'] === true) {
-        report += await checkForFile(app, context, "README.md")
-      }
-
-      if (innersourceRequirements['branch_protection_rules']) {
-        report += await branch_protection(app, context, innersourceRequirements['branch_protection_rules'])
-      }
-
-      if (innersourceRequirements['dependabot_alert_check']) {
-        report += await dependabot_alert_check(app, context)
-      }
+      await runIssueReport(app, context, innersourceRequirements)
 
       app.log.info("report: " + report)
 
