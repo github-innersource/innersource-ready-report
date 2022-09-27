@@ -2,6 +2,18 @@
 
 A GitHub App to enable your Project for Innersource registration.
 
+The App evaluates a Repo that is 'marked' for InnerSourcing, if it is compliant with certain Repo setting requirements. The App creates an `InnerSource Ready Report` within the Repo, listing all required Repo settings and their compliance.
+In case a Repo is not compliant, the user can *'fix'* the required settings and re-run the compliance check (Issue-Ops Comment: `/check`).
+When all InnerSource requirements are met, the App sends the `InnerSource Ready Report` to a InnerSource registration service.
+
+## Process Flow to *InnerSource* a Repo
+
+![processflow](docs/images/processflow.png)
+
+## Sample Issue Report
+
+![issue-report-sample.png](docs/images/issue-report-sample.png)
+
 ## Quickstart
 
 ### Install the App (Development)
@@ -79,10 +91,3 @@ INFO (server): Listening on http://localhost:3000
 
     </details>
 - Done !
-
-## Process Flow
-
-![processflow](docs/images/processflow.png)
-## Sample Issue Report
-
-![issue-report-sample.png](docs/images/issue-report-sample.png)
