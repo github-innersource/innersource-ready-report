@@ -80,4 +80,6 @@ INFO (server): Listening on http://localhost:3000
     </details>
 - Done !
 
+## Sample Issue Report
+
 ![issue-report-sample.png](docs/images/issue-report-sample.png)
