@@ -14,6 +14,8 @@ When all InnerSource requirements are met, the App sends the `InnerSource Ready 
 
 ![issue-report-sample.png](docs/images/issue-report-sample.png)
 
+---
+
 ## Quickstart
 
 ### Install the App (Development)
