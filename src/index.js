@@ -186,7 +186,7 @@ async function runIssueReport(app, context, innersourceRequirements) {
   report += "|STATUS|FILE|LOCATION|\n|---|---|---|\n"
 
   if (innersourceRequirements['code_of_conduct'] === true) {
-    report += await checkForFile(app, context, "CODE_OF_CONDUCT")
+    report += await checkForFile(app, context, "CODE_OF_CONDUCT.md")
   }
 
   if (innersourceRequirements['codeowners'] === true) {
@@ -194,7 +194,7 @@ async function runIssueReport(app, context, innersourceRequirements) {
   }
 
   if (innersourceRequirements['contributing'] === true) {
-    report += await checkForFile(app, context, "CONTRIBUTING")
+    report += await checkForFile(app, context, "CONTRIBUTING.md")
   }
 
   if (innersourceRequirements['readme'] === true) {
