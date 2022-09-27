@@ -31,6 +31,9 @@
                 <mxCell id="8" value="&lt;font color=&quot;#333333&quot;&gt;Repository Issue&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=#E6E6E6;strokeColor=#333333;fillColor=#B3B3B3;" parent="28" vertex="1">
                     <mxGeometry x="165.9213562373095" y="181.0013562373095" width="110" height="30" as="geometry"/>
                 </mxCell>
+                <mxCell id="brf7tR4pHE1us93a3u3g-5" value="Add&amp;nbsp;&lt;i&gt;InnerSource&amp;nbsp;&lt;/i&gt;Topic" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=20;notch2=20;fillColor=#10739E;strokeColor=none;align=center;verticalAlign=middle;fontColor=#ffffff;fontSize=14;fontStyle=1;" parent="28" vertex="1">
+                    <mxGeometry x="-88.9986437626905" y="41.42135623730951" width="208" height="40" as="geometry"/>
+                </mxCell>
                 <mxCell id="7" value="&lt;font color=&quot;#e6e6e6&quot;&gt;&lt;span style=&quot;font-family: &amp;#34;helvetica&amp;#34; ; font-size: 12px ; font-style: normal ; font-weight: 700 ; letter-spacing: normal ; text-align: center ; text-indent: 0px ; text-transform: none ; word-spacing: 0px ; display: inline ; float: none&quot;&gt;Innersource&lt;/span&gt;&lt;br style=&quot;font-family: &amp;#34;helvetica&amp;#34; ; font-size: 12px ; font-style: normal ; font-weight: 700 ; letter-spacing: normal ; text-align: center ; text-indent: 0px ; text-transform: none ; word-spacing: 0px&quot;&gt;&lt;span style=&quot;font-family: &amp;#34;helvetica&amp;#34; ; font-size: 12px ; font-style: normal ; font-weight: 700 ; letter-spacing: normal ; text-align: center ; text-indent: 0px ; text-transform: none ; word-spacing: 0px ; display: inline ; float: none&quot;&gt;Ready Report&lt;/span&gt;&lt;br style=&quot;font-family: &amp;#34;helvetica&amp;#34; ; font-size: 12px ; font-style: normal ; font-weight: 700 ; letter-spacing: normal ; text-align: center ; text-indent: 0px ; text-transform: none ; word-spacing: 0px&quot;&gt;&lt;span style=&quot;font-family: &amp;#34;helvetica&amp;#34; ; font-size: 12px ; font-style: normal ; font-weight: 700 ; letter-spacing: normal ; text-align: center ; text-indent: 0px ; text-transform: none ; word-spacing: 0px ; display: inline ; float: none&quot;&gt;...&lt;/span&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=#99FFFF;strokeColor=#333333;fillColor=#4D4D4D;" parent="brf7tR4pHE1us93a3u3g-13" vertex="1">
                     <mxGeometry x="107.34135623730951" y="370.0013562373095" width="110" height="60" as="geometry"/>
                 </mxCell>
@@ -42,9 +45,6 @@
                 </mxCell>
                 <mxCell id="brf7tR4pHE1us93a3u3g-4" value="Repo is Compliant" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=20;notch2=20;fillColor=#10739E;strokeColor=none;align=center;verticalAlign=middle;fontColor=#ffffff;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="430" y="241.42000000000002" width="200" height="40" as="geometry"/>
-                </mxCell>
-                <mxCell id="brf7tR4pHE1us93a3u3g-5" value="Add&amp;nbsp;&lt;i&gt;InnerSource&amp;nbsp;&lt;/i&gt;Topic" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=20;notch2=20;fillColor=#10739E;strokeColor=none;align=center;verticalAlign=middle;fontColor=#ffffff;fontSize=14;fontStyle=1;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="241.42000000000002" width="208" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="brf7tR4pHE1us93a3u3g-12" value="Add to &lt;i&gt;InnerSource&lt;/i&gt;" style="html=1;shape=mxgraph.infographic.ribbonSimple;notch1=20;notch2=20;fillColor=#10739E;strokeColor=none;align=center;verticalAlign=middle;fontColor=#ffffff;fontSize=14;fontStyle=1;" parent="1" vertex="1">
                     <mxGeometry x="620" y="241.42000000000002" width="200" height="40" as="geometry"/>
