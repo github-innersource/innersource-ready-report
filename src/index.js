@@ -244,6 +244,8 @@ module.exports = (app, { getRouter }) => {
   // Your code here
   app.log.info("Yay, the app was loaded!");
 
+  ADAPTER = app.
+
   // --------------------------------------------------------------------------
   app.on("issue_comment.created", async (context) => {
     app.log.info("issue_comment.created")
