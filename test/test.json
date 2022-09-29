@@ -1,0 +1,15 @@
+{
+    "license": {
+        "expected": [
+            "MIT",
+            "ISC"
+        ],
+        "currentLicense": "ISC",
+        "compliant": true
+    },
+    "files": {
+        "path": true,
+        "license": false,
+        "compliant": true
+    }
+}

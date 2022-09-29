@@ -3,8 +3,11 @@ const ui = require('./ui/innersourceUI.js')
 const fs = require('fs')
 const yaml = require('js-yaml')
 const util = require('util')
+
 let innersourceRequirements = {}
 let report = ""
+let jsonReport = JSON.parse("{}");
+
 /**
  * This function loads the app configuration from the file system
  * @param {*} app 
@@ -55,6 +58,7 @@ async function checkLicense(app, context, license) {
   let response
   let hasLicense = false
   let repoLicense
+
   try {
     repoLicense = await context.octokit.licenses.getForRepo(
       {
@@ -74,6 +78,12 @@ async function checkLicense(app, context, license) {
   } else {
     response = "|:warning:| " + license + "| " + repoLicense.data.license.spdx_id + " |\n"
   }
+
+  jsonReport.license = {}
+  jsonReport.license.expected = license
+  jsonReport.license.currentLicense = currentLicense
+  jsonReport.license.compliant = hasLicense
+
   return response
 }
 
@@ -84,13 +94,25 @@ async function checkLicense(app, context, license) {
 async function checkForFile(app, context, fileName) {
   app.log.info("checkForFile: " + fileName)
   let response
+  jsonReport.files = []
 
   response = await checkContent(app, context, fileName)
   if (response == "404") {
+    let path = "/"
+    let requiredFile = {
+      "name": fileName,
+      "path": path,
+      "compliant": false
+    }
+
+    jsonReport['files'].push(requiredFile)
+
     response = await checkContent(app, context, ".github/" + fileName)
     if (response == "404") {
+        
       response = "|:warning:| " + fileName + "| File Not found |\n"
     } else {
+
       line = response
       response = "|:white_check_mark:| " + fileName + "| .github/" + fileName + " |\n"
     }
@@ -100,6 +122,7 @@ async function checkForFile(app, context, fileName) {
     response = "|:white_check_mark:|" + fileName + "| /" + fileName + "|\n"
   }
 
+  jsonReport.files
   return response
 }
 
@@ -174,6 +197,7 @@ async function dependabot_alert_check(app, context) {
  */
 async function runIssueReport(app, context, innersourceRequirements) {
   app.log.info("runIssueReport")
+  jsonReport = {}
 
   report += "## License\n\n"
 
@@ -260,6 +284,7 @@ module.exports = (app, { getRouter }) => {
       await runIssueReport(app, context, innersourceRequirements)
 
       app.log.info("report: " + report)
+      app.log.info("jsonReport: " + JSON.stringify(jsonReport))
 
       const issue = await context.octokit.rest.issues.create({
         owner: context.payload.repository.owner.login,
