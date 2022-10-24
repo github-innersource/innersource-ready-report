@@ -1,19 +1,18 @@
 ---
 # Required License Types
 license: 
-  - MIT
-  - ISC
+  MIT,ISC: ICS
 
 # Required Innersource files
 files:
-  - CODE_OF_CONDUCT.md
-  - CODEOWNERS
-  - CONTRIBUTING.md
-  - README.md
+  CODE_OF_CONDUCT.md: false
+  CODEOWNERS: true
+  CONTRIBUTING.md: true
+  README.md: true
 
 # Branch protection rules
 branch_protection_rules: 
-  allowsDeletions: true
+  allowsDeletions(true): true
   allowsForcePushes: false
   isAdminEnforced: true
   requiresApprovingReviews: true
@@ -30,3 +29,9 @@ branch_protection_rules:
 # Check on open Dependabot Alerts and verify the threshold
 # severity: low, moderate, high, critical
 dependabot_alert_check: high
+
+summary:
+  license: true
+  files: true
+  branch_protection_rules: false
+  dependabot_alert_check: true
