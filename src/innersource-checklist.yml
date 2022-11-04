@@ -28,5 +28,5 @@ branch_protection_rules:
   restrictsReviewDismissals: true
 
 # Check on open Dependabot Alerts and verify the threshold
-# severity: low, moderate, high, critical
-dependabot_alert_check: high
+# Can be: low, medium, high, critical
+dependabot_alert_threshold: high

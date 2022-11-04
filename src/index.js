@@ -3,12 +3,14 @@ const ui = require('./ui/innersourceUI.js')
 const fs = require('fs')
 const yaml = require('js-yaml')
 const util = require('util')
+const { json } = require('express')
+const adapter = require('./adapters/sampleAdapter.js')
 
 let innersourceRequirements = {}
-let report = ""
-let jsonReport = JSON.parse("{}");
-const status = [':"+ white_check_mark +":', ':warning:']
-const white_check_mark = "<img width='16' alt='check' src='https://user-images.githubusercontent.com/863198/194782472-79f7d7b0-2af0-4712-b3d0-01f64f99f785.png'></img>"
+const status = ['"+ white_check_mark +"', ':warning:']
+const check_mark = "<img width='14' alt='check' src='https://user-images.githubusercontent.com/863198/194782472-79f7d7b0-2af0-4712-b3d0-01f64f99f785.png'></img>"
+const warning = "<img  width='14' alt='warning' src='https://user-images.githubusercontent.com/863198/199776742-888ece59-7e88-46f4-94b6-69314505cf90.png'></img>"
+
 /** ---------------------------------------------------------------------------
  * @description This function loads the app configuration from the file system
  * @param {*} app 
@@ -24,32 +26,73 @@ function loadAppConfig(app) {
 }
 
 /** ---------------------------------------------------------------------------
- * @description Generic function to check if a file exists at a location in 
- *              the repository 
- * @param {*} fileName 
- * @returns File content or 404
+ * @description This function transforms the YAML report into a Markdown report
+ * @param {*} yaml
+ * @returns markdown
  */
-async function checkContent(app, context, fileName) {
-  let response = ""
+async function toMarkdown(context, data) {
+  let markdown = ""
 
-  try {
-    const file = await context.octokit.repos.getContent(
-      {
-        owner: context.payload.repository.owner.login,
-        repo: context.payload.repository.name,
-        path: fileName
+  // list each 'top-level' element (name)
+  Object.keys(data).forEach(async (name) => {
+    // don't add the 'meta-data' information to the markdown
+    if (name !== "meta") {
+      mdName = name.replace(/_/g, " ").toUpperCase()
+      context.log.debug("name: " + mdName)
+      markdown += "\n\n---\n\n"
+      markdown += "### " + mdName + "\n\n"
+      context.log.debug("typeof: " + typeof data[name])
+
+      // check the object type of each element
+      if (typeof data[name] == "object") {
+        if (data[name] instanceof Array) {
+          arr = data[name]
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i].compliant == true) {
+              markdown += "" + check_mark + " **" + arr[i].name + "**\n"
+            } else {
+              markdown += "" + warning + " " + arr[i].name + "\n"
+            }
+          }
+          markdown += "\n\n"
+        } else { // it must be an 'normal' object
+          // Object.keys(data[name]).forEach(async (a) => {
+          if (name == "license") {
+            if (data.license.compliant == true) {
+              markdown += check_mark + " License Type: **" + data.license.name + "**\n\n"
+            } else {
+              markdown += warning + " License Type: " + data.license.name + "\n\n"
+            }
+          }
+          // })
+          markdown += "\n\n"
+        }
       }
-    );
 
-    let buff = Buffer.from(file.data.content, 'base64')
-    let text = buff.toString('utf-8')
+      if (typeof data[name] == "number") {
+        if (name == "health") {
+          if (data[name] < 100) {
+            markdown += warning + " Status: " + data[name] + " % \n\n"
+          } else {
+            markdown += check_mark + " Status:  **" + data[name] + " %**\n\n"
+          }
+        } else {
+          markdown += name + ": " + data[name] + "\n\n"
+        }
+      }
 
-    response = text
-  } catch (err) {
-    response = err.status
-  }
+      if (typeof data[name] == "string") {
+        markdown += data[name] + "\n\n"
+      }
+    } else {
+      context.log.debug("Ignore the meta-data")
+    }
+  })
 
-  return response
+  markdown += "\n\n---\n\n"
+  markdown += "<details><summary>Details</summary><p>\n\n```\n" + JSON.stringify(data, null, 4) + "\n```\n\n</p></details>"
+
+  return markdown
 }
 
 /** ---------------------------------------------------------------------------
@@ -58,8 +101,8 @@ async function checkContent(app, context, fileName) {
  * @returns
  */
 async function checkLicense(app, context, license) {
-  app.log.info("checkLicense: " + license)
-  let response
+  app.log.info("checkLicense")
+  let jsonSectionReport = JSON.parse("{}")
   let hasLicense = false
   let repoLicense
 
@@ -71,108 +114,99 @@ async function checkLicense(app, context, license) {
       }
     )
   } catch (err) {
-    response = err.status
-  }
-  currentLicense = repoLicense.data.license.spdx_id
-  app.log.info("currentLicense: " + currentLicense)
-  license.indexOf(currentLicense) > -1 ? hasLicense = true : hasLicense = false
-
-  if (hasLicense) {
-    response = "|:"+ white_check_mark +":| " + license + "| " + repoLicense.data.license.spdx_id + " |\n"
-  } else {
-    response = "|:warning:| " + license + "| " + repoLicense.data.license.spdx_id + " |\n"
+    context.log.error(err)
   }
 
-  jsonReport.license = {}
-  jsonReport.license.expected = license
-  jsonReport.license.currentLicense = currentLicense
-  jsonReport.license.compliant = hasLicense
+  license.indexOf(repoLicense.data.license.spdx_id) > -1 ? hasLicense = true : hasLicense = false
 
-  return response
-}
+  jsonSectionReport.license = {}
+  jsonSectionReport.license.name = repoLicense.data.license.name
+  jsonSectionReport.license.key = repoLicense.data.license.key
+  jsonSectionReport.license.spdx_id = repoLicense.data.license.spdx_id
+  jsonSectionReport.license.compliant = hasLicense
+  context.log.debug("checkLicense: " + JSON.stringify(jsonSectionReport))
 
-/** ---------------------------------------------------------------------------
- * @description This function transforms the YAML report into a Markdown report
- * @param {*} yaml
- * @returns markdown
- */
-async function yaml2markdown(app, yamlData) {
-  let markdown = ""
-  Object.keys(yamlData).forEach(async (name) => {
-    markdown += "\n"
-    mdName = name.replace(/_/g, " ").toUpperCase()
-    markdown += "## " + mdName + "\n\n"
-
-    if (name == "branch_protection_rules") {
-      markdown += "| | ELEMENT | STATUS |\n"
-      markdown += "|---|---|---|\n"
-    }
-    else {
-      markdown += "| | REQUIRED | STATUS |\n"
-      markdown += "|---|---|---|\n"
-    }
-
-    if (typeof yamlData[name] == "string") {
-      markdown += "|:warning:| " + yamlData[name] + "| |\n"
-    }
-    else {
-      Object.keys(yamlData[name]).forEach(async (key) => {
-        if (yamlData[name][key] == true) {
-          markdown += "|:"+ white_check_mark +":| " + key + "|" + util.inspect(yamlData[name][key]) + "|\n"
-        }
-        else {
-          markdown += "|:warning:| " + key + "|" + util.inspect(yamlData[name][key]) + "|\n"
-        }
-      })
-    }
-  })
-
-  return markdown
+  return jsonSectionReport
 }
 
 /** ---------------------------------------------------------------------------
  * @description This function checks if the repository has the required files
  * @param {*} app 
  */
-async function checkForFile(app, context, fileName) {
-  app.log.info("checkForFile: " + fileName)
+async function checkForFiles(app, context, files) {
+  app.log.info("checkForFiles")
+  let jsonSectionReport = JSON.parse("{}")
   let response
-  jsonReport.files = []
+  let compliant
+  jsonSectionReport.files = []
 
-  // Check if the file exists in the 'root' location
-  response = await checkContent(app, context, fileName)
-  if (response == "404") {
-    // Check if the file exists in the '.github' location
-    response = await checkContent(app, context, ".github/" + fileName)
+  for (let i = 0; i < files.length; i++) {
+    let fileObject = JSON.parse("{}")
 
-    if (response == "404") {
-      response = "|:warning:| " + fileName + "| File Not found |\n"
-      app.log.info("checkForFile: " + fileName + " found in")
+    // Check if the file exists in the 'root' location
+    response = await checkContent(app, context, files[i])
+
+    if (response == 200) {
+      compliant = true
     } else {
-      line = response
-      response = "|:"+ white_check_mark +":| " + fileName + "| .github/" + fileName + " |\n"
-      app.log.info("checkForFile: " + fileName + " found in .github")
-    }
-  }
-  else {
-    line = response
-    response = "|:"+ white_check_mark +":|" + fileName + "| /" + fileName + "|\n"
-  }
+      // Check if the file exists in the '.github' location
+      response = await checkContent(app, context, ".github/" + files[i])
 
-  jsonReport.files
-  return response
+      if (response == 200) {
+        compliant = true
+      } else {
+        compliant = false
+      }
+    }
+    fileObject.name = files[i]
+    fileObject.compliant = compliant
+    jsonSectionReport.files[i] = fileObject
+  }
+  context.log.debug("checkForFiles: " + JSON.stringify(jsonSectionReport))
+  return jsonSectionReport
 }
 
 /** ---------------------------------------------------------------------------
- * 
- * @param {*} app 
+ * @description Generic function to check if a file exists at a location in 
+ *              the repository 
+ * @param {*} fileName 
+ * @returns status (200, 404 ...)
  */
-async function branch_protection(app, context, branch_protection_rules) {
-  app.log.info("Branch Protection:" + util.inspect(branch_protection_rules))
-  let response = "\n\n## Branch Protection Rules (default branch)\n\n"
-  response += "|STATUS|RULE|EXPECTED|FOUND|\n|---|---|---|---|\n"
+async function checkContent(app, context, fileName) {
+  context.log.debug("checkContent: >" + fileName + "<")
+  let file
 
-  result = await context.octokit.graphql(
+  try {
+    file = await context.octokit.repos.getContent(
+      {
+        owner: context.payload.repository.owner.login,
+        repo: context.payload.repository.name,
+        path: fileName
+      }
+    );
+
+  } catch (err) {
+    context.log.error(err.status)
+    return err.status
+  }
+
+  return file.status
+}
+
+/** ---------------------------------------------------------------------------
+ * @description Check Branch-Protection compliance
+ * @param {*} app
+ * @param {*} context
+ * @param branch_protection_rules
+ */
+async function branchProtection(app, context, branch_protection_rules) {
+  app.log.info("Branch Protection")
+
+  let index = 0
+  let jsonSectionReport = JSON.parse("{}")
+  jsonSectionReport.branch_protection = []
+
+  const result = await context.octokit.graphql(
     `query listBranchProtectionRule($owner: String!, $repo: String!) {
       repository( owner: $owner, name: $repo ) {
         branchProtectionRules(first:5) {
@@ -200,21 +234,26 @@ async function branch_protection(app, context, branch_protection_rules) {
     }
   )
 
-  app.log.info("Branch Protection:" + util.inspect(result.repository.branchProtectionRules.nodes[0]))
-  jsonReport += "branch_protection:\n"
+  // app.log.info("Branch Protection:" + util.inspect(result.repository.branchProtectionRules.nodes[0]))
+
   Object.keys(branch_protection_rules).forEach(async (ruleName) => {
+    let branchProtectionObject = JSON.parse("{}")
+    branchProtectionObject.name = ruleName
+    branchProtectionObject.value = result.repository.branchProtectionRules.nodes[0][ruleName]
+    branchProtectionObject.expected = branch_protection_rules[ruleName]
 
     if (branch_protection_rules[ruleName] == result.repository.branchProtectionRules.nodes[0][ruleName]) {
-      response += "|:"+ white_check_mark +":|" + ruleName + "|" + branch_protection_rules[ruleName] + "|" + result.repository.branchProtectionRules.nodes[0][ruleName] + "|\n"
-      jsonReport += "  " + ruleName + ": true\n"
+      branchProtectionObject.compliant = true
     }
     else {
-      response += "|:warning:|" + ruleName + "|" + branch_protection_rules[ruleName] + "|" + result.repository.branchProtectionRules.nodes[0][ruleName] + "|\n"
-      jsonReport += "  " + ruleName + ": false\n"
+      branchProtectionObject.compliant = false
     }
+
+    jsonSectionReport.branch_protection[index] = branchProtectionObject
+    index += 1
   })
-  jsonReport += "\n"
-  return response
+  context.log.debug("branch_protection: " + JSON.stringify(jsonSectionReport))
+  return jsonSectionReport
 }
 
 /** ---------------------------------------------------------------------------
@@ -223,51 +262,80 @@ async function branch_protection(app, context, branch_protection_rules) {
  */
 async function dependabot_alert_check(app, context) {
   app.log.info("Dependabot Alert Check")
-  let response = "\n\n## Dependabot Alerts\n\n"
-  app.log.info("\n\n\n\n Dependabot Alert Check: " + util.inspect(context.github))
+  let jsonSectionReport = JSON.parse("{}")
+  jsonSectionReport.dependabot_alert_check = []
 
-  // context.octokit.request('GET /repos/jefeish/policy-app/dependabot/alerts', {
-  //   owner: context.payload.repository.owner.login,
-  //   repo: context.payload.repository.name
-  // })
+  // const alerts = await context.octokit.rest.dependabot.listAlertsForRepo({
+  //   owner: context.payload.repository.login,
+  //   repo: context.payload.repository.name,
+  // });
 
-  return response
+  // context.log.info("alerts: "+ util.inspect(alerts))
+  
+  jsonSectionReport.dependabot_alert_check[0] = "{ \"name\": TBD }"
+
+  return jsonSectionReport
 }
 
 /**
- * 
+ * @description run the compliance checks
  * @param {*} app 
  * @param {*} context 
  */
-async function runIssueReport(app, context, innersourceRequirements) {
-  app.log.info("runIssueReport")
-  jsonReport = {}
+async function runComplianceChecks(app, context, innersourceRequirements) {
+  app.log.info("runComplianceChecks")
+  let res1, res2, res3, res4
+  let jsonReport = JSON.parse("{}")
+  let jsonReportMeta = JSON.parse("{}")
+  context.log.info("META: " + util.inspect(context.payload.repository.name))
+  jsonReportMeta.org = context.payload.organization.login
+  jsonReportMeta.repo = context.payload.repository.name
+  jsonReportMeta.owner = context.payload.repository.owner
+  jsonReportMeta.full_name = context.payload.repository.full_name
+  jsonReport.meta = jsonReportMeta
 
-  report += "## License\n\n"
+  jsonReport.description = "Report for Innersource compliance.\nTo re-run this report use the **slash command:** `/check`\n\n"
 
-  report += "|STATUS|EXPECTED LICENSE|SET LICENSE|\n|---|---|---|\n"
   if (innersourceRequirements['license']) {
-    report += await checkLicense(app, context, innersourceRequirements['license'])
+    res1 = await checkLicense(app, context, innersourceRequirements['license'])
+    jsonReport.license = res1.license
   }
 
-  report += "## Required Files\n\n"
-  report += "|STATUS|FILE|LOCATION|\n|---|---|---|\n"
-
-  let files = innersourceRequirements['files']
-  for (let i = 0; i < files.length; i++) {
-    report += await checkForFile(app, context, files[i])
+  if (innersourceRequirements['files']) {
+    res2 = await checkForFiles(app, context, innersourceRequirements['files'])
+    jsonReport.files = res2.files
   }
 
   if (innersourceRequirements['branch_protection_rules']) {
-    report += await branch_protection(app, context, innersourceRequirements['branch_protection_rules'])
+    res3 = await branchProtection(app, context, innersourceRequirements['branch_protection_rules'])
+    jsonReport.branch_protection = res3.branch_protection
   }
 
-  if (innersourceRequirements['dependabot_alert_check']) {
-    report += await dependabot_alert_check(app, context)
+  if (innersourceRequirements['dependabot_alert_threshold']) {
+    res4 = await dependabot_alert_check(app, context)
+    jsonReport.dependabot_alert_check = res4.dependabot_alert_check
   }
 
-  return report
+  // poor man's way to count the compliance %
+  const t = JSON.stringify(jsonReport).split("\"compliant\"").length - 1
+  const v = JSON.stringify(jsonReport).split("\"compliant\":true").length - 1
+  const h = (v / t * 100) | 0
+  jsonReport.health = h
+
+  context.log.debug("Final report: " + JSON.stringify(jsonReport))
+
+  // ---------------------------------------------------------------------------
+
+  adapter.execute(context, jsonReport)
+
+  // ---------------------------------------------------------------------------
+
+  return jsonReport
 }
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 /**
  * This is the main entrypoint to your Probot app
@@ -275,29 +343,23 @@ async function runIssueReport(app, context, innersourceRequirements) {
  */
 module.exports = (app, { getRouter }) => {
   app.log.info("Yay, the app was loaded!");
-  const yamlDoc = yaml.load(fs.readFileSync('src/sample-report.yml', "utf8"));
-  const md = yaml2markdown(app, yamlDoc).then((md) => {
-    app.log.info("..." + md)
-  })
-
-  // ADAPTER = app.
 
   // --------------------------------------------------------------------------
   app.on("issue_comment.created", async (context) => {
-    app.log.info("issue_comment.created")
-    const comment = context.payload.comment.body;
-    report = ""
+
+    const comment = context.payload.comment.body
+    innersourceRequirements = loadAppConfig(app)
+
     app.log.info("issue_comment.created: " + util.inspect(context.payload))
     if ((comment.startsWith("/check") > -1) && (context.payload.comment.user.type == "User")) {
-      app.log.info("check")
-      await runIssueReport(app, context, innersourceRequirements)
-      app.log.info("report: " + report)
+
+      const report = await runComplianceChecks(app, context, innersourceRequirements)
 
       const issue = await context.octokit.rest.issues.createComment({
         owner: context.payload.repository.owner.login,
         repo: context.payload.repository.name,
         issue_number: context.payload.issue.number,
-        body: report,
+        body: await toMarkdown(context, report),
       });
     }
     else {
@@ -309,26 +371,22 @@ module.exports = (app, { getRouter }) => {
   app.on("repository.edited", async (context) => {
 
     innersourceRequirements = loadAppConfig(app)
-    report = "# Innersource Ready Report\n\n"
-    app.log.info("repository.edited");
-
-    report += " An `Innersource Ready Report` has been generated for this repository. Please review the report and make any necessary changes. \n\nYou can re-run the report by creating an Issue-Comment with the content of `/check`\n\n\n"
 
     if (context.payload.changes.topics) {
       app.log.info("repository.edited");
       app.log.info("Topics changed");
       app.log.info("Topics: " + context.payload.repository.topics)
 
-      await runIssueReport(app, context, innersourceRequirements)
+      const report = await runComplianceChecks(app, context, innersourceRequirements)
 
-      app.log.info("report: " + report)
-      app.log.info("jsonReport: " + JSON.stringify(jsonReport))
+      app.log.debug("report: " + util.inspect(JSON.stringify(report)))
+      app.log.debug("MD: " + await toMarkdown(context, report))
 
       const issue = await context.octokit.rest.issues.create({
         owner: context.payload.repository.owner.login,
         repo: context.payload.repository.name,
         title: 'Innersource Ready Report',
-        body: report,
+        body: await toMarkdown(context, report),
       });
     }
   });
@@ -341,4 +399,4 @@ module.exports = (app, { getRouter }) => {
 
   // To get your app running against GitHub, see:
   // https://probot.github.io/docs/development/
-};
+}
