@@ -4,7 +4,7 @@ A GitHub App to enable your Project for Innersource registration.
 
 - **What does that mean ?**
 
-We are providing a self-service process for developers to promote their application to Innersource. The process containts the following
+We are providing a self-service process for developers to promote their application to Innersource. The process contains the following...
 
 ![process](docs/images/process-steps.png)
 
