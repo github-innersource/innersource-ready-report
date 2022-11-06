@@ -2,6 +2,12 @@
 
 A GitHub App to enable your Project for Innersource registration.
 
+- **What does that mean ?**
+
+We are providing a self-service process for developers to promote their application to an Innersource community. That process look containts the following
+
+
+
 The App evaluates a Repo that is 'marked' for InnerSourcing, to be compliant with configured requirements.
 
 The App creates an `InnerSource Ready Report` within the Repo, listing all required Repo settings and their compliance.
