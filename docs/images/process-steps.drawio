@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="A7P0m905duTjjpihhYuD" name="Page-1">
-        <mxGraphModel dx="693" dy="587" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="589" dy="348" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -10,7 +10,7 @@
                 <mxCell id="3" value="Check InnerSource &lt;br&gt;compliance &lt;br&gt;standards&lt;br&gt;&lt;br&gt;(GitHub App)" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;size=40;fontSize=18;fillColor=#004C99;fontColor=#ffffff;strokeColor=none;" parent="1" vertex="1">
                     <mxGeometry x="200" y="40" width="240" height="200" as="geometry"/>
                 </mxCell>
-                <mxCell id="4" value="Visualize &lt;br&gt;InnSource &lt;br&gt;status&lt;br&gt;&lt;br&gt;(GitHub App)" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;size=40;fontSize=18;strokeColor=none;fillColor=#003366;fontColor=#ffffff;" parent="1" vertex="1">
+                <mxCell id="4" value="Visualize &lt;br&gt;InnerSource &lt;br&gt;status&lt;br&gt;&lt;br&gt;(GitHub App)" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;size=40;fontSize=18;strokeColor=none;fillColor=#003366;fontColor=#ffffff;" parent="1" vertex="1">
                     <mxGeometry x="400" y="40" width="200" height="200" as="geometry"/>
                 </mxCell>
                 <mxCell id="6" value="" style="rounded=0;whiteSpace=wrap;html=1;fontSize=18;strokeColor=none;fillColor=#000099;fontColor=#ffffff;" parent="1" vertex="1">
@@ -19,10 +19,10 @@
                 <mxCell id="7" value="" style="rounded=0;whiteSpace=wrap;html=1;fontSize=18;strokeColor=none;fillColor=#003366;fontColor=#ffffff;" parent="1" vertex="1">
                     <mxGeometry x="560" y="40" width="40" height="200" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="Self-Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D4D4D;fontColor=#ffffff;strokeColor=#314354;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="8" value="Self-Service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D4D4D;fontColor=#ffffff;strokeColor=#99FFFF;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="40" y="214" width="170" height="26" as="geometry"/>
                 </mxCell>
-                <mxCell id="9" value="Automation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D4D4D;fontColor=#ffffff;strokeColor=#314354;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="9" value="Automation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4D4D4D;fontColor=#ffffff;strokeColor=#99FFFF;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="210" y="214" width="390" height="26" as="geometry"/>
                 </mxCell>
             </root>
