@@ -4,6 +4,8 @@ const fs = require('fs')
 const yaml = require('js-yaml')
 const util = require('util')
 const { json } = require('express')
+
+// specify the adapter that you want to use with your Innersource registry
 const adapter = require('./adapters/sampleAdapter.js')
 
 let innersourceRequirements = {}
@@ -13,9 +15,9 @@ const warning = "<img  width='14' alt='warning' src='https://user-images.githubu
 
 /** ---------------------------------------------------------------------------
  * @description This function loads the app configuration from the file system
- * @param {*} app 
+ *
  */
-function loadAppConfig(app) {
+function loadAppConfig() {
   try {
     // eslint-disable-next-line no-path-concat
     const configData = fs.readFileSync('./src/innersource-checklist.yml', 'utf8')
@@ -343,14 +345,15 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
  */
 module.exports = (app, { getRouter }) => {
   app.log.info("Yay, the app was loaded!");
-
+  innersourceRequirements = loadAppConfig()
+  
   // --------------------------------------------------------------------------
   app.on("issue_comment.created", async (context) => {
 
     const comment = context.payload.comment.body
-    innersourceRequirements = loadAppConfig(app)
 
     app.log.info("issue_comment.created: " + util.inspect(context.payload))
+
     if ((comment.startsWith("/check") > -1) && (context.payload.comment.user.type == "User")) {
 
       const report = await runComplianceChecks(app, context, innersourceRequirements)
@@ -369,8 +372,6 @@ module.exports = (app, { getRouter }) => {
 
   // --------------------------------------------------------------------------
   app.on("repository.edited", async (context) => {
-
-    innersourceRequirements = loadAppConfig(app)
 
     if (context.payload.changes.topics) {
       app.log.info("repository.edited");
