@@ -10,6 +10,9 @@ files:
   - CODEOWNERS
   - CONTRIBUTING.md
   - README.md
+  - CITATION.md
+  - SUPPORT.md
+  - SECURITY.md
 
 # Branch protection rules
 branch_protection_rules: 

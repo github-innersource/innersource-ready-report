@@ -7,6 +7,7 @@ const { json } = require('express')
 
 // specify the adapter that you want to use with your Innersource registry
 const adapter = require('./adapters/sampleAdapter.js')
+const { application } = require('express')
 
 let innersourceRequirements = {}
 const status = ['"+ white_check_mark +"', ':warning:']
@@ -58,7 +59,7 @@ async function toMarkdown(context, data) {
           }
           markdown += "\n\n"
         } else { // it must be an 'normal' object
-          // Object.keys(data[name]).forEach(async (a) => {
+
           if (name == "license") {
             if (data.license.compliant == true) {
               markdown += check_mark + " License Type: **" + data.license.name + "**\n\n"
@@ -116,7 +117,14 @@ async function checkLicense(app, context, license) {
       }
     )
   } catch (err) {
-    context.log.error(err)
+    // context.log.error(err)
+    context.log.info("no license found")
+    jsonSectionReport.license = {}
+    jsonSectionReport.license.name = "none"
+    jsonSectionReport.license.key = "none"
+    jsonSectionReport.license.spdx_id = "none"
+    jsonSectionReport.license.compliant = hasLicense
+    return jsonSectionReport
   }
 
   license.indexOf(repoLicense.data.license.spdx_id) > -1 ? hasLicense = true : hasLicense = false
@@ -189,6 +197,7 @@ async function checkContent(app, context, fileName) {
 
   } catch (err) {
     context.log.error(err.status)
+    context.log.info("File not found: " + fileName)
     return err.status
   }
 
@@ -205,11 +214,13 @@ async function branchProtection(app, context, branch_protection_rules) {
   app.log.info("Branch Protection")
 
   let index = 0
+  let result
   let jsonSectionReport = JSON.parse("{}")
   jsonSectionReport.branch_protection = []
 
-  const result = await context.octokit.graphql(
-    `query listBranchProtectionRule($owner: String!, $repo: String!) {
+  try {
+    result = await context.octokit.graphql(
+      `query listBranchProtectionRule($owner: String!, $repo: String!) {
       repository( owner: $owner, name: $repo ) {
         branchProtectionRules(first:5) {
           nodes {
@@ -230,30 +241,45 @@ async function branchProtection(app, context, branch_protection_rules) {
         }
       }
     }`,
-    {
-      owner: context.payload.repository.owner.login,
-      repo: context.payload.repository.name
-    }
-  )
+      {
+        owner: context.payload.repository.owner.login,
+        repo: context.payload.repository.name
+      }
+    )
+  } catch (err) {
+    context.log.info("BPR: " + util.inspect(result))
+    context.log.error(err)
+  }
+  app.log.info("Branch Protection:" + util.inspect(result))
 
   // app.log.info("Branch Protection:" + util.inspect(result.repository.branchProtectionRules.nodes[0]))
 
   Object.keys(branch_protection_rules).forEach(async (ruleName) => {
     let branchProtectionObject = JSON.parse("{}")
-    branchProtectionObject.name = ruleName
-    branchProtectionObject.value = result.repository.branchProtectionRules.nodes[0][ruleName]
-    branchProtectionObject.expected = branch_protection_rules[ruleName]
+    try {
 
-    if (branch_protection_rules[ruleName] == result.repository.branchProtectionRules.nodes[0][ruleName]) {
-      branchProtectionObject.compliant = true
-    }
-    else {
+      branchProtectionObject.name = ruleName
+      branchProtectionObject.value = result.repository.branchProtectionRules.nodes[0][ruleName]
+      branchProtectionObject.expected = branch_protection_rules[ruleName]
+
+      if (branch_protection_rules[ruleName] == result.repository.branchProtectionRules.nodes[0][ruleName]) {
+        branchProtectionObject.compliant = true
+      }
+      else {
+        branchProtectionObject.compliant = false
+      }
+
+    } catch (err) {
+      branchProtectionObject.name = ruleName
+      branchProtectionObject.value = false
+      branchProtectionObject.expected = branch_protection_rules[ruleName]
       branchProtectionObject.compliant = false
     }
-
     jsonSectionReport.branch_protection[index] = branchProtectionObject
     index += 1
   })
+
+
   context.log.debug("branch_protection: " + JSON.stringify(jsonSectionReport))
   return jsonSectionReport
 }
@@ -266,20 +292,79 @@ async function dependabot_alert_check(app, context) {
   app.log.info("Dependabot Alert Check")
   let jsonSectionReport = JSON.parse("{}")
   jsonSectionReport.dependabot_alert_check = []
+  const severity_order = ["LOW", "MODERATE", "HIGH", "CRITICAL"]
 
-  // const alerts = await context.octokit.rest.dependabot.listAlertsForRepo({
-  //   owner: context.payload.repository.login,
-  //   repo: context.payload.repository.name,
-  // });
+  const REPO = context.payload.repository.name
+  const OWNER = context.payload.repository.owner.login
 
-  // context.log.info("alerts: "+ util.inspect(alerts))
-  
-  jsonSectionReport.dependabot_alert_check[0] = "{ \"name\": TBD }"
+  const result = await context.octokit.graphql(
+    `query listBranchProtectionRule($owner: String!, $repo: String!) {
+    repository( owner: $owner, name: $repo ) {
+      vulnerabilityAlerts(first: 100) {
+        nodes {
+          state
+          createdAt
+          dismissedAt
+          securityVulnerability {
+            package {
+              name
+            }
+            advisory {
+              severity
+              classification
+              summary
+            }
+          }
+        }
+      }
+    }
+  }`,
+    {
+      owner: context.payload.repository.owner.login,
+      repo: context.payload.repository.name
+    }
+  )
+
+  let index = 0
+  result.repository.vulnerabilityAlerts.nodes.forEach(alert => {
+ 
+    let dependabotAlertObject = JSON.parse("{}")
+
+    dependabotAlertObject.package = alert.securityVulnerability.package.name
+    dependabotAlertObject.severity = alert.securityVulnerability.advisory.severity
+    dependabotAlertObject.classification = alert.securityVulnerability.advisory.classification
+    dependabotAlertObject.name = alert.securityVulnerability.advisory.summary +" ["+ alert.securityVulnerability.advisory.severity +"]"
+
+    const THRESHOLD = severity_order.indexOf(innersourceRequirements.dependabot_alert_threshold.toUpperCase())
+    const SEVERITY = severity_order.indexOf(alert.securityVulnerability.advisory.severity.toUpperCase())
+ 
+    if (SEVERITY >= THRESHOLD) {
+      dependabotAlertObject.compliant = false
+    }    
+    else
+    {
+      dependabotAlertObject.compliant = true
+    }
+
+    jsonSectionReport.dependabot_alert_check[index] = dependabotAlertObject
+    index++
+  })
 
   return jsonSectionReport
 }
 
-/**
+/** ---------------------------------------------------------------------------
+ * @description run the compliance checks
+ * @param {*} app 
+ * @param {*} context 
+ */
+// async function listLanguages(context, jsonReport) {
+//   app.log.info("Repository Languages")
+
+//   return jsonReport
+// }
+
+/** ---------------------------------------------------------------------------
  * @description run the compliance checks
  * @param {*} app 
  * @param {*} context 
@@ -289,41 +374,57 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
   let res1, res2, res3, res4
   let jsonReport = JSON.parse("{}")
   let jsonReportMeta = JSON.parse("{}")
+
   context.log.info("META: " + util.inspect(context.payload.repository.name))
+
+  const languages = await context.octokit.rest.repos.listLanguages({
+    owner: context.payload.repository.owner.login,
+    repo: context.payload.repository.name,
+  });
+
+  jsonReportMeta.report_date = Date()
+  jsonReportMeta.fork = context.payload.repository.fork
   jsonReportMeta.org = context.payload.organization.login
   jsonReportMeta.repo = context.payload.repository.name
   jsonReportMeta.owner = context.payload.repository.owner
   jsonReportMeta.full_name = context.payload.repository.full_name
+  jsonReportMeta.languages = languages.data
   jsonReport.meta = jsonReportMeta
 
-  jsonReport.description = "Report for Innersource compliance.\nTo re-run this report use the **slash command:** `/check`\n\n"
-
-  if (innersourceRequirements['license']) {
-    res1 = await checkLicense(app, context, innersourceRequirements['license'])
-    jsonReport.license = res1.license
+  if (context.payload.repository.fork == true) {
+    app.log.info("Repository is a fork. Forks cannot be InnerSource'd!")
+    jsonReport.description = "This repository is a fork. Innersource 'promotion' cancelled, Forks cannot be InnerSource'd!"
   }
+  else {
+    app.log.info("Repository is not a fork. Running compliance checks.")
+    jsonReport.description = "Report for Innersource compliance.\nTo re-run this report use the **slash command:** `/check`\n\n"
 
-  if (innersourceRequirements['files']) {
-    res2 = await checkForFiles(app, context, innersourceRequirements['files'])
-    jsonReport.files = res2.files
+    if (innersourceRequirements['license']) {
+      res1 = await checkLicense(app, context, innersourceRequirements['license'])
+      jsonReport.license = res1.license
+    }
+
+    if (innersourceRequirements['files']) {
+      res2 = await checkForFiles(app, context, innersourceRequirements['files'])
+      jsonReport.files = res2.files
+    }
+
+    if (innersourceRequirements['branch_protection_rules']) {
+      res3 = await branchProtection(app, context, innersourceRequirements['branch_protection_rules'])
+      jsonReport.branch_protection = res3.branch_protection
+    }
+
+    if (innersourceRequirements['dependabot_alert_threshold']) {
+      res4 = await dependabot_alert_check(app, context)
+      jsonReport.dependabot_alert_check = res4.dependabot_alert_check
+    }
+
+    // poor man's way to count the compliance %
+    const t = JSON.stringify(jsonReport).split("\"compliant\"").length - 1
+    const v = JSON.stringify(jsonReport).split("\"compliant\":true").length - 1
+    const h = (v / t * 100) | 0
+    jsonReport.health = h
   }
-
-  if (innersourceRequirements['branch_protection_rules']) {
-    res3 = await branchProtection(app, context, innersourceRequirements['branch_protection_rules'])
-    jsonReport.branch_protection = res3.branch_protection
-  }
-
-  if (innersourceRequirements['dependabot_alert_threshold']) {
-    res4 = await dependabot_alert_check(app, context)
-    jsonReport.dependabot_alert_check = res4.dependabot_alert_check
-  }
-
-  // poor man's way to count the compliance %
-  const t = JSON.stringify(jsonReport).split("\"compliant\"").length - 1
-  const v = JSON.stringify(jsonReport).split("\"compliant\":true").length - 1
-  const h = (v / t * 100) | 0
-  jsonReport.health = h
-
   context.log.debug("Final report: " + JSON.stringify(jsonReport))
 
   // ---------------------------------------------------------------------------
@@ -345,33 +446,49 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
  */
 module.exports = (app, { getRouter }) => {
   app.log.info("Yay, the app was loaded!");
+  TOPICS = process.env.TOPICS.split(",").map(topic => topic.trim())
   innersourceRequirements = loadAppConfig()
-  
+  let containsInnersourceTopic = false
+
   // --------------------------------------------------------------------------
   app.on("issue_comment.created", async (context) => {
-
+    app.log.info("issue_comment.created")
     const comment = context.payload.comment.body
 
-    app.log.info("issue_comment.created: " + util.inspect(context.payload))
+    // check if the repo has any innersource topic
+    context.payload.repository.topics.forEach(topic => {
+      TOPICS.indexOf(topic) > -1 ? containsInnersourceTopic = true : containsInnersourceTopic = false
+    })
 
-    if ((comment.startsWith("/check") > -1) && (context.payload.comment.user.type == "User")) {
+    // check if the comment starts with /check, 
+    // if the event was issued by a human 
+    // and if the repo has any innersource topic
+    if (
+      (comment.startsWith("/check") > -1) &&
+      (context.payload.comment.user.type == "User") &&
+      (containsInnersourceTopic)
+    ) {
 
       const report = await runComplianceChecks(app, context, innersourceRequirements)
 
-      const issue = await context.octokit.rest.issues.createComment({
-        owner: context.payload.repository.owner.login,
-        repo: context.payload.repository.name,
-        issue_number: context.payload.issue.number,
-        body: await toMarkdown(context, report),
-      });
+      // We cannot create an issue if the repo is a fork
+      if (context.payload.repository.fork != true) {
+        const issue = await context.octokit.rest.issues.createComment({
+          owner: context.payload.repository.owner.login,
+          repo: context.payload.repository.name,
+          issue_number: context.payload.issue.number,
+          body: await toMarkdown(context, report),
+        });
+      }
     }
     else {
-      app.log.info("not check")
+      app.log.info("not running runComplianceChecks")
     }
   })
 
   // --------------------------------------------------------------------------
   app.on("repository.edited", async (context) => {
+    app.log.info("repository.edited")
 
     if (context.payload.changes.topics) {
       app.log.info("repository.edited");
@@ -381,14 +498,18 @@ module.exports = (app, { getRouter }) => {
       const report = await runComplianceChecks(app, context, innersourceRequirements)
 
       app.log.debug("report: " + util.inspect(JSON.stringify(report)))
-      app.log.debug("MD: " + await toMarkdown(context, report))
 
-      const issue = await context.octokit.rest.issues.create({
-        owner: context.payload.repository.owner.login,
-        repo: context.payload.repository.name,
-        title: 'Innersource Ready Report',
-        body: await toMarkdown(context, report),
-      });
+      // We cannot create an issue if the repo is a fork
+      if (context.payload.repository.fork != true) {
+        app.log.debug("MD: " + await toMarkdown(context, report))
+
+        const issue = await context.octokit.rest.issues.create({
+          owner: context.payload.repository.owner.login,
+          repo: context.payload.repository.name,
+          title: 'Innersource Ready Report',
+          body: await toMarkdown(context, report),
+        });
+      }
     }
   });
 
