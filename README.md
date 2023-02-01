@@ -8,13 +8,13 @@ We are providing a self-service process for developers to promote their applicat
 
 ![process](docs/images/process-steps.png)
 
-The App evaluates a Repo that is 'marked' for InnerSourcing, to be compliant with configured requirements.
+- The App evaluates a Repo that is 'marked' for InnerSourcing, to be compliant with configured requirements.
 
-The App creates an `InnerSource Ready Report` within the Repo, listing all required Repo settings and their compliance.
+- The App creates an `InnerSource Ready Report` within the Repo, listing all required Repo settings and their compliance.
 
-In case a Repo is not compliant, the user can *'fix'* the required settings and re-run the compliance check (Issue-Ops Comment: `/check`).
+- In case a Repo is not compliant, the user can *'fix'* the required settings and re-run the compliance check (Issue-Ops Comment: `/check`).
 
-When all InnerSource requirements are met, the App sends the `InnerSource Ready Report` to a InnerSource registration service.
+- When all InnerSource requirements are met, the App sends the `InnerSource Ready Report` to a InnerSource registration service.
 
 ## Process Flow to *InnerSource* a Repo
 
@@ -104,5 +104,6 @@ INFO (server): Listening on http://localhost:3000
     </details>
 - Done !
 
+> **NOTE:** The `.env.example` file contains some custom parameters that should be copied into the final `.env` file.
 
 ---
