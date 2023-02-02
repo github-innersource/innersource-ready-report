@@ -2,13 +2,13 @@
 
 A GitHub App to prepare your Project for Innersource registration, based on configured requirements. 
 
-It produces an `Innersource Ready Report`, which will be added as a `Repo Issue` and a `JSON formatted report` will be send to a persistent storage (configurable).
+It produces an `Innersource Ready Report`, which will be added as a `Repo Issue` and in addition a `JSON formatted report` will be send to a persistent storage (configurable).
 
 ---
 
 - **What does that mean ?**
 
-We are providing a self-service process for developers to promote their application to Innersource. The process contains the following...
+We are providing **a self-service process** for developers to promote their application to Innersource. The process contains the following...
 
 ![process](docs/images/process-steps.png)
 
@@ -107,6 +107,8 @@ INFO (server): Listening on http://localhost:3000
 
     </details>
 - Done !
+
+---
 
 > **NOTE:** The `.env.example` file contains some custom parameters that should be copied into the final `.env` file.
 
