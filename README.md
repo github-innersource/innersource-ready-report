@@ -1,6 +1,6 @@
 # Innersource-Ready-Report
 
-A GitHub App to prepare your Project for Innersource registration, based on company requirements. 
+A GitHub App to prepare your Project for Innersource registration, based on configured requirements. 
 
 It produces an `Innersource Ready Report`, which will be added as a `Repo Issue` and a `JSON formatted report` will be send to a persistent storage (configurable).
 
