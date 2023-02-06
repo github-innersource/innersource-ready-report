@@ -16,7 +16,7 @@ We are providing **a self-service process** for developers to promote their appl
 
 - The App creates an `InnerSource Ready Report` within the Repo, listing all required Repo settings and their compliance.
 
-- In case a Repo is not compliant, the user can *'fix'* the required settings and re-run the compliance check (Issue-Ops Comment: `/check`).
+- In case a Repo is not compliant, the user can *'fix'* the required settings and re-run the compliance check (Issue-Ops Comment: `/comply`).
 
 - When all InnerSource requirements are met, the App sends the `InnerSource Ready Report` to a InnerSource registration service.
 
