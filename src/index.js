@@ -289,7 +289,6 @@ async function branchProtection(app, context, branch_protection_rules) {
     index += 1
   })
 
-
   context.log.debug("branch_protection: " + JSON.stringify(jsonSectionReport))
   return jsonSectionReport
 }
@@ -308,7 +307,7 @@ async function dependabot_alert_check(app, context) {
   const OWNER = context.payload.repository.owner.login
 
   const result = await context.octokit.graphql(
-    `query listBranchProtectionRule($owner: String!, $repo: String!) {
+    `query listVulnerabilityAlerts($owner: String!, $repo: String!) {
     repository( owner: $owner, name: $repo ) {
       vulnerabilityAlerts(first: 100) {
         nodes {
@@ -430,14 +429,35 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
 
     let healthObject = JSON.parse("{}")
     // describe the health of the repo
-    healthObject.description = "The 'modular_health' of the repository is a percentage of the compliance checks that passed."
+    healthObject.description = "The 'modular_health' is a percentage of all passing compliance checks. The group_health is the percentage of fully passed sections."
 
     // poor man's way to count the compliance %
     const t = JSON.stringify(jsonReport).split("\"compliant\"").length - 1
     const v = JSON.stringify(jsonReport).split("\"compliant\":true").length - 1
     const h = (v / t * 100) | 0
     healthObject.modular_health = h
-    healthObject.group_health = 0
+
+    //group health by toplevel json section
+    const sections = Object.keys(jsonReport)
+    const valueOfSection = 100 / (sections.length - 2) // -3 for status, meta, description
+
+    let gHealth = 0
+
+    // loop through the sections and count the compliant ones
+    sections.forEach(async (name) => {
+      if ((name != "status") && (name != "meta") && (name != "description")) {
+        const _t = JSON.stringify(jsonReport[name]).split("\"compliant\"").length - 1
+        const _v = JSON.stringify(jsonReport[name]).split("\"compliant\":true").length - 1
+        const _h = (_v / _t * 100) | 0
+
+        if(_h == 100) {
+          gHealth++
+        } 
+      }
+    })
+
+    healthObject.group_health = gHealth * valueOfSection
+
     jsonReport.status = healthObject
   }
   context.log.debug("Final report: " + JSON.stringify(jsonReport))
