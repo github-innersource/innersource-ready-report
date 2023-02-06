@@ -69,19 +69,29 @@ async function toMarkdown(context, data) {
           }
           // })
           markdown += "\n\n"
+
+          if (name == "status") {
+
+              if (data[name].modular_health < 75) {
+                markdown += warning + " Modular Health: " + data[name].modular_health + " % \n\n"
+              } else {
+                markdown += check_mark + " Modular Health:  **" + data[name].modular_health + " %**\n\n"
+              }
+
+              if (data[name].group_health < 100) {
+                markdown += warning + " Group Health: " + data[name].group_health + " % \n\n"
+              } else {
+                markdown += check_mark + " Group Health:  **" + data[name].group_health + " %**\n\n"
+              }
+            
+          }
+          // })
+          markdown += "\n\n"
         }
       }
 
       if (typeof data[name] == "number") {
-        if (name == "health") {
-          if (data[name] < 100) {
-            markdown += warning + " Status: " + data[name] + " % \n\n"
-          } else {
-            markdown += check_mark + " Status:  **" + data[name] + " %**\n\n"
-          }
-        } else {
-          markdown += name + ": " + data[name] + "\n\n"
-        }
+        markdown += name + ": " + data[name] + "\n\n"
       }
 
       if (typeof data[name] == "string") {
@@ -327,22 +337,21 @@ async function dependabot_alert_check(app, context) {
 
   let index = 0
   result.repository.vulnerabilityAlerts.nodes.forEach(alert => {
- 
+
     let dependabotAlertObject = JSON.parse("{}")
 
     dependabotAlertObject.package = alert.securityVulnerability.package.name
     dependabotAlertObject.severity = alert.securityVulnerability.advisory.severity
     dependabotAlertObject.classification = alert.securityVulnerability.advisory.classification
-    dependabotAlertObject.name = alert.securityVulnerability.advisory.summary +" ["+ alert.securityVulnerability.advisory.severity +"]"
+    dependabotAlertObject.name = alert.securityVulnerability.advisory.summary + " [" + alert.securityVulnerability.advisory.severity + "]"
 
     const THRESHOLD = severity_order.indexOf(innersourceRequirements.dependabot_alert_threshold.toUpperCase())
     const SEVERITY = severity_order.indexOf(alert.securityVulnerability.advisory.severity.toUpperCase())
- 
+
     if (SEVERITY >= THRESHOLD) {
       dependabotAlertObject.compliant = false
-    }    
-    else
-    {
+    }
+    else {
       dependabotAlertObject.compliant = true
     }
 
@@ -397,7 +406,7 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
   }
   else {
     app.log.info("Repository is not a fork. Running compliance checks.")
-    jsonReport.description = "Report for Innersource compliance.\nTo re-run this report use the **slash command:** `/check`\n\n"
+    jsonReport.description = "Report for Innersource compliance.\nTo re-run this report use the **slash command:** `/comply`\n\n"
 
     if (innersourceRequirements['license']) {
       res1 = await checkLicense(app, context, innersourceRequirements['license'])
@@ -419,11 +428,17 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
       jsonReport.dependabot_alert_check = res4.dependabot_alert_check
     }
 
+    let healthObject = JSON.parse("{}")
+    // describe the health of the repo
+    healthObject.description = "The 'modular_health' of the repository is a percentage of the compliance checks that passed."
+
     // poor man's way to count the compliance %
     const t = JSON.stringify(jsonReport).split("\"compliant\"").length - 1
     const v = JSON.stringify(jsonReport).split("\"compliant\":true").length - 1
     const h = (v / t * 100) | 0
-    jsonReport.health = h
+    healthObject.modular_health = h
+    healthObject.group_health = 0
+    jsonReport.status = healthObject
   }
   context.log.debug("Final report: " + JSON.stringify(jsonReport))
 
@@ -460,11 +475,11 @@ module.exports = (app, { getRouter }) => {
       TOPICS.indexOf(topic) > -1 ? containsInnersourceTopic = true : containsInnersourceTopic = false
     })
 
-    // check if the comment starts with /check, 
+    // check if the comment starts with /comply, 
     // if the event was issued by a human 
     // and if the repo has any innersource topic
     if (
-      (comment.startsWith("/check") > -1) &&
+      (comment.startsWith("/comply") == true) &&
       (context.payload.comment.user.type == "User") &&
       (containsInnersourceTopic)
     ) {
@@ -472,7 +487,7 @@ module.exports = (app, { getRouter }) => {
       const report = await runComplianceChecks(app, context, innersourceRequirements)
 
       // We cannot create an issue if the repo is a fork
-      if (context.payload.repository.fork != true) {
+      if (context.payload.repository.fork != true) { // this might be obsolete since forks don't have issues
         const issue = await context.octokit.rest.issues.createComment({
           owner: context.payload.repository.owner.login,
           repo: context.payload.repository.name,
