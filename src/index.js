@@ -392,10 +392,14 @@ async function runComplianceChecks(app, context, innersourceRequirements) {
 
   jsonReportMeta.report_date = Date()
   jsonReportMeta.fork = context.payload.repository.fork
+  jsonReportMeta.forks = context.payload.repository.forks
+  jsonReportMeta.stargazers_count = context.payload.repository.stargazers_count
+  jsonReportMeta.open_issues_count = context.payload.repository.open_issues_count
   jsonReportMeta.org = context.payload.organization.login
   jsonReportMeta.repo = context.payload.repository.name
   jsonReportMeta.owner = context.payload.repository.owner
   jsonReportMeta.full_name = context.payload.repository.full_name
+  jsonReportMeta.clone_url = context.payload.repository.clone_url
   jsonReportMeta.languages = languages.data
   jsonReport.meta = jsonReportMeta
 
