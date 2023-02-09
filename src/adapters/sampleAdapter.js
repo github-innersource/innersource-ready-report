@@ -36,14 +36,18 @@ exports.execute = async function (context, data) {
         const accumulated_irr_content = JSON.parse(buf.toString())
         let irrObject = {}
 
+        context.log.info("accumulated_irr_content: " + util.inspect(accumulated_irr_content, false, null, true /* enable colors */))
         irrObject.name = context.payload.repository.name
         irrObject.description = context.payload.repository.description
         irrObject.stars = context.payload.repository.stargazers_count
         irrObject.forked = context.payload.repository.forks_count
         irrObject.issues = context.payload.repository.open_issues_count
         irrObject.compatible = data.status.modular_health < 100 ? false : true
-        irrObject.percentage = data.status.modular_health
+        irrObject.languages = data.meta.languages
+        irrObject.status = data.status
         irrObject.url = context.payload.repository.html_url
+
+        context.log.debug("sampleAdapter:irrObject: " + util.inspect(irrObject, false, null, true /* enable colors */))
 
         let no_irr_for_repo = true
 
@@ -52,24 +56,28 @@ exports.execute = async function (context, data) {
 
         //if the content array is empty, add the irrObject to it
         if (content.length == 0) {
+            context.log.info("accumulated_irr_content is empty, adding repo: '" + context.payload.repository.name + "' to accumulated_irr_content...")
             content.push(irrObject)
         }
         else {
             //iterate over the content and find the repo-name
             for (let i = 0; i < content.length; i++) {
                 if (content[i].name == context.payload.repository.name) {
-                    console.log("found repo in accumulated_irr: " + content[i].name)
+                    context.log.info("found repo in accumulated_irr: " + content[i].name)
                     content[i] = irrObject
-                    no_irr_for_repo = true
+                    no_irr_for_repo = false
                     break
                 }
             }
 
-            if(no_irr_for_repo) {
+            if (no_irr_for_repo) {
+                context.log.info("accumulated_irr_content did not contain '" + context.payload.repository.name + "'")
+                context.log.info("adding repo: '" + context.payload.repository.name + "' to accumulated_irr_content...")
                 content.push(irrObject)
             }
         }
 
+        context.log.info("writing new content back to accumulated_irr.json: " + util.inspect(content, false, null, true /* enable colors */))
         const repo_path = process.env.ADAPTER_REPO_PATH + "/" + "accumulated_irr.json"
         context.octokit.rest.repos.createOrUpdateFileContents({
             "owner": org,
@@ -133,7 +141,7 @@ async function getAccumulatedIRR(context) {
     const repo_path = process.env.ADAPTER_REPO_PATH + "/accumulated_irr.json"
     let check_content
 
-    console.log("repo_path: " + repo_path)
+    context.log.info("repo_path: " + repo_path)
 
     try {
         check_content = await context.octokit.rest.repos.getContent({
@@ -143,6 +151,7 @@ async function getAccumulatedIRR(context) {
         });
     } catch (err) {
         // file does not exist, create the file
+        context.log.info("accumulated_irr.json does not exist, creating it now..." + err )
         check_content = await context.octokit.rest.repos.createOrUpdateFileContents({
             "owner": org,
             "repo": repo,
