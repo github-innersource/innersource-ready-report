@@ -38,6 +38,7 @@ exports.execute = async function (context, data) {
 
         context.log.info("accumulated_irr_content: " + util.inspect(accumulated_irr_content, false, null, true /* enable colors */))
         irrObject.name = context.payload.repository.name
+        irrObject.org = context.payload.organization.login
         irrObject.description = context.payload.repository.description
         irrObject.stars = context.payload.repository.stargazers_count
         irrObject.forked = context.payload.repository.forks_count
