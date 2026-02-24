@@ -6,7 +6,7 @@ It produces an `Innersource Ready Report`, which will be added as a `Repo Issue`
 
 ---
 
-- **What does that mean ?**
+- **What Does That Mean ?**
 
 We are providing **a self-service process** for developers to promote their application to Innersource. The process contains the following...
 
